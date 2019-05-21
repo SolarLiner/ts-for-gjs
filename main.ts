@@ -1,11 +1,12 @@
-import * as xml2js from "xml2js";
-import * as lodash from "lodash";
-import * as commander from "commander";
-import fs = require("fs");
-import { GirModule } from "./girModule";
+import * as xml2js from "xml2js"
+import * as lodash from "lodash"
+import * as commander from "commander"
+import fs = require("fs")
+import { GirModule } from "./girModule"
+import { MapType, InheritanceTable } from "./types"
 
 function exportGjs(outDir: string | null, girModules: { [key: string]: any }) {
-  if (!outDir) return;
+  if (!outDir) return
 
   fs.createWriteStream(`${outDir}/Gjs.d.ts`).write(
     `export namespace byteArray {
@@ -69,7 +70,7 @@ export namespace Mainloop {
     export function run(name: string): void
 }
 `
-  );
+  )
 
   fs.createWriteStream(`${outDir}/Gjs.js`).write(
     `module.exports = {
@@ -79,17 +80,15 @@ export namespace Mainloop {
     Mainloop: imports.mainloop,
     gettext: imports.gettext
 }`
-  );
+  )
 
-  const keys = lodash.keys(girModules).map(key => key.split("-")[0]);
+  const keys = lodash.keys(girModules).map(key => key.split("-")[0])
 
   // Breaks dependent app with error TS2383 if directly in global.
   // https://github.com/Microsoft/TypeScript/issues/16430
-  fs.createWriteStream(`${outDir}/print.d.ts`).write(
-    `declare function print(...args: any[]): void`
-  );
+  fs.createWriteStream(`${outDir}/print.d.ts`).write(`declare function print(...args: any[]): void`)
 
-  fs.createWriteStream(`${outDir}/index.js`).write("");
+  fs.createWriteStream(`${outDir}/index.js`).write("")
 
   fs.createWriteStream(`${outDir}/index.d.ts`).write(
     `/// <reference path="print.d.ts" />
@@ -112,25 +111,22 @@ ${keys.map(key => `            ${key}: typeof ${key}`).join("\n")}
 }
 
 export { }`
-  );
+  )
 }
 
-function exportExtra(
-  outDir: string | null,
-  inheritanceTable: Record<string, any[]>
-) {
-  if (!outDir) return;
+function exportExtra(outDir: string | null, inheritanceTable: Record<string, any[]>) {
+  if (!outDir) return
 
-  let def: string[] = [];
-  def.push("import * as GObject from './GObject'");
-  def.push("");
-  def.push("let inheritanceTable = {");
+  let def: string[] = []
+  def.push("import * as GObject from './GObject'")
+  def.push("")
+  def.push("let inheritanceTable = {")
   for (let k of lodash.keys(inheritanceTable)) {
-    let arr: string = "'" + inheritanceTable[k].join("', '") + "'";
-    def.push(`    '${k}': [ ${arr} ],`);
+    let arr: string = "'" + inheritanceTable[k].join("', '") + "'"
+    def.push(`    '${k}': [ ${arr} ],`)
   }
-  def.push("}");
-  def.push("");
+  def.push("}")
+  def.push("")
 
   def.push(`
 interface StaticNamed {
@@ -165,19 +161,19 @@ export function giCast<T>(from_: GObject.Object, to_: StaticNamed): T {
 
     throw Error("Invalid cast of " + desc + "(" + clsName + ") to " + toName)
 }
-`);
+`)
 
-  fs.createWriteStream(`${outDir}/cast.ts`).write(def.join("\n"));
+  fs.createWriteStream(`${outDir}/cast.ts`).write(def.join("\n"))
 }
 
-function finaliseInheritance(inheritanceTable: Record<string, any[]>) {
+function finaliseInheritance<T>(inheritanceTable: InheritanceTable<T>) {
   for (let clsName of lodash.keys(inheritanceTable)) {
-    let p = inheritanceTable[clsName][0];
+    let p = inheritanceTable[clsName][0]
     while (p) {
-      p = inheritanceTable[p];
+      p = inheritanceTable[p]
       if (p) {
-        p = p[0];
-        inheritanceTable[clsName].push(p);
+        p = p[0]
+        inheritanceTable[clsName].push(p)
       }
     }
   }
@@ -185,96 +181,89 @@ function finaliseInheritance(inheritanceTable: Record<string, any[]>) {
 
 function main() {
   commander
-    .option(
-      "-g --gir-directory [directory]",
-      "GIR directory",
-      "/usr/share/gir-1.0"
-    )
+    .option("-g --gir-directory [directory]", "GIR directory", "/usr/share/gir-1.0")
     .option(
       "-m --module [module]",
-      "GIR modules to load, e.g. 'Gio-2.0'. May be specified multiple " +
-        "times",
+      "GIR modules to load, e.g. 'Gio-2.0'. May be specified multiple " + "times",
       (val, lst) => {
-        lst.push(val);
-        return lst;
+        lst.push(val)
+        return lst
       },
       []
     )
     .option("-o --outdir [dir]", "Directory to output to", null)
-    .parse(process.argv);
+    .parse(process.argv)
 
-  let girModules: Record<string, GirModule> = {};
-  let girDirectory = commander.girDirectory;
-  let girToLoad = commander.module;
+  let girModules: Record<string, GirModule> = {}
+  let girDirectory = commander.girDirectory
+  let girToLoad = commander.module
 
   if (girToLoad.length == 0) {
-    console.error("Need to specify modules via -m!");
-    return;
+    console.error("Need to specify modules via -m!")
+    return
   }
 
   while (girToLoad.length > 0) {
-    let name = girToLoad.shift();
-    let fileName = `${girDirectory}/${name}.gir`;
-    console.log(`Parsing ${fileName}...`);
-    let fileContents = fs.readFileSync(fileName, "utf8");
+    let name = girToLoad.shift()
+    let fileName = `${girDirectory}/${name}.gir`
+    console.log(`Parsing ${fileName}...`)
+    let fileContents = fs.readFileSync(fileName, "utf8")
     xml2js.parseString(fileContents, (err, result) => {
       if (err) {
-        console.error("ERROR: " + err);
-        return;
+        console.error("ERROR: " + err)
+        return
       }
-      let gi = new GirModule(result);
+      let gi = new GirModule(result)
 
-      if (!gi.name) return;
+      if (!gi.name) return
 
-      girModules[`${gi.name}-${gi.version}`] = gi;
+      girModules[`${gi.name}-${gi.version}`] = gi
 
       for (let dep of gi.dependencies) {
         if (!girModules[dep] && lodash.indexOf(girToLoad, dep) < 0) {
-          girToLoad.unshift(dep);
+          girToLoad.unshift(dep)
         }
       }
-    });
+    })
   }
 
   //console.dir(girModules["GObject-2.0"], { depth: null })
 
-  console.log("Files parsed, loading types...");
+  console.log("Files parsed, loading types...")
 
-  let symTable: { [name: string]: any } = {};
-  for (let k of lodash.values(girModules)) k.loadTypes(symTable);
+  let symTable: MapType<any> = {}
+  for (let k of lodash.values(girModules)) k.loadTypes(symTable)
 
-  let inheritanceTable: { [name: string]: string[] } = {};
-  for (let k of lodash.values(girModules)) k.loadInheritance(inheritanceTable);
-  finaliseInheritance(inheritanceTable);
+  let inheritanceTable: Record<string, string[]> = {}
+  for (let k of lodash.values(girModules)) k.loadInheritance(inheritanceTable)
+  finaliseInheritance(inheritanceTable)
 
   //console.dir(inheritanceTable)
 
   // Figure out transitive module dependencies
-  let modDependencyMap: { [name: string]: string[] } = {};
+  let modDependencyMap: Record<string, string[]> = {}
 
   for (let k of lodash.values(girModules)) {
-    modDependencyMap[k.name || "-"] = lodash.map(
-      k.dependencies || [],
-      (val: string) => {
-        return val.split("-")[0];
-      }
-    );
+    modDependencyMap[k.name || "-"] = lodash.map(k.dependencies || [], (val: string) => {
+      return val.split("-")[0]
+    })
   }
 
-  let traverseDependencies = (name, ret) => {
-    let deps = modDependencyMap[name];
+  let traverseDependencies = (name: string | null, ret: object) => {
+    if (name === null) throw new Error("name is not defined")
+    let deps = modDependencyMap[name]
 
     for (let a of deps) {
-      if (ret[a]) continue;
-      ret[a] = 1;
-      traverseDependencies(a, ret);
+      if (ret[a]) continue
+      ret[a] = 1
+      traverseDependencies(a, ret)
     }
-  };
+  }
 
   for (let k of lodash.values(girModules)) {
-    let ret = {};
-    traverseDependencies(k.name, ret);
-    k.transitiveDependencies = lodash.keys(ret);
+    let ret = {}
+    traverseDependencies(k.name, ret)
+    k.transitiveDependencies = lodash.keys(ret)
   }
 
   let patch = {
@@ -282,57 +271,64 @@ function main() {
       "/* return type clashes with Atk.Action.get_description */",
       "get_description(): string | null"
     ],
-    "Atk.Object.get_name": [
-      "/* return type clashes with Atk.Action.get_name */",
-      "get_name(): string | null"
-    ],
+    "Atk.Object.get_name": ["/* return type clashes with Atk.Action.get_name */", "get_name(): string | null"],
     "Atk.Object.set_description": [
       "/* return type clashes with Atk.Action.set_description */",
       "set_description(description: string): boolean | null"
     ],
-    "Gtk.Container.child_notify": [
-      "/* child_notify clashes with Gtk.Widget.child_notify */"
-    ],
-    "Gtk.MenuItem.activate": [
-      "/* activate clashes with Gtk.Widget.activate */"
-    ],
-    "Gtk.TextView.get_window": [
-      "/* get_window clashes with Gtk.Widget.get_window */"
-    ],
-    "WebKit.WebView.get_settings": [
-      "/* get_settings clashes with Gtk.Widget.get_settings */"
-    ]
-  };
-
-  console.log("Types loaded, generating .d.ts...");
-
-  for (let k of lodash.keys(girModules)) {
-    let outf: NodeJS.WritableStream = process.stdout;
-    if (commander.outdir) {
-      let outdir: string = commander.outdir;
-      let name: string = girModules[k].name || "unknown";
-      let fileName: string = `${outdir}/${name}.d.ts`;
-      outf = fs.createWriteStream(fileName);
-    }
-    console.log(` - ${k} ...`);
-    girModules[k].patch = patch;
-    girModules[k].export(outf);
-
-    if (commander.outdir) {
-      let outdir: string = commander.outdir;
-      let name: string = girModules[k].name || "unknown";
-      let fileName: string = `${outdir}/${name}.js`;
-      outf = fs.createWriteStream(fileName);
-    }
-
-    girModules[k].exportJs(outf);
+    "Gtk.Container.child_notify": ["/* child_notify clashes with Gtk.Widget.child_notify */"],
+    "Gtk.MenuItem.activate": ["/* activate clashes with Gtk.Widget.activate */"],
+    "Gtk.TextView.get_window": ["/* get_window clashes with Gtk.Widget.get_window */"],
+    "WebKit.WebView.get_settings": ["/* get_settings clashes with Gtk.Widget.get_settings */"]
   }
 
-  // GJS internal stuff
-  exportGjs(commander.outdir, girModules);
-  exportExtra(commander.outdir, inheritanceTable);
+  console.log("Types loaded, generating .d.ts...")
 
-  console.log("Done.");
+  for (let k of lodash.keys(girModules)) {
+    let outf: NodeJS.WritableStream = process.stdout
+    if (commander.outdir) {
+      let outdir: string = commander.outdir
+      let name: string = girModules[k].name || "unknown"
+      let fileName: string = `${outdir}/${name}.d.ts`
+      outf = fs.createWriteStream(fileName)
+    }
+    console.log(` - ${k} ...`)
+    girModules[k].patch = patch
+    girModules[k].export(outf)
+
+    if (commander.outdir) {
+      let outdir: string = commander.outdir
+      let name: string = girModules[k].name || "unknown"
+      let fileName: string = `${outdir}/${name}.js`
+      outf = fs.createWriteStream(fileName)
+    }
+
+    girModules[k].exportJs(outf)
+  }
+
+  mkdirp(commander.outdir)
+    .then(() => {
+      // GJS internal stuff
+      exportGjs(commander.outdir, girModules)
+      exportExtra(commander.outdir, inheritanceTable)
+
+      console.log("Done.")
+    })
+    .catch(err => console.error(err))
 }
 
-if (require.main === module) main();
+async function mkdirp(dir: string) {
+  return new Promise<void>((resolve, reject) => {
+    fs.exists(dir, e => {
+      if (e) resolve()
+      else {
+        fs.mkdir(dir, { recursive: true }, err => {
+          if (err) reject(err)
+          else resolve()
+        })
+      }
+    })
+  })
+}
+
+if (require.main === module) main()

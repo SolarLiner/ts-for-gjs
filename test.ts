@@ -1,7 +1,7 @@
-import test from "ava";
-import { GirModule } from "./girModule";
-import { GirEnumeration } from "./types";
-import * as TestData from "./testData";
+import test from "ava"
+import { GirModule } from "./girModule"
+import { GirEnumeration } from "./types"
+import * as TestData from "./testData"
 
 let emptyRepositoryXml = {
   repository: {
@@ -14,7 +14,7 @@ let emptyRepositoryXml = {
       }
     ]
   }
-};
+}
 
 test("enumeration", t => {
   let enum_: GirEnumeration = {
@@ -29,15 +29,11 @@ test("enumeration", t => {
         }
       }
     ]
-  };
+  }
 
-  let mod = new GirModule(emptyRepositoryXml);
-  t.deepEqual(mod.exportEnumeration(enum_), [
-    "export enum MyEnum {",
-    "    MEMBER_1,",
-    "}"
-  ]);
-});
+  let mod = new GirModule(emptyRepositoryXml)
+  t.deepEqual(mod.exportEnumeration(enum_), ["export enum MyEnum {", "    MEMBER_1,", "}"])
+})
 
 test("constant", t => {
   let var_ = {
@@ -51,7 +47,7 @@ test("constant", t => {
         }
       }
     ]
-  };
+  }
   let arrVar = {
     $: { name: "MY_ARR" },
     array: [
@@ -60,20 +56,20 @@ test("constant", t => {
         type: [{ $: { name: "MyType" } }]
       }
     ]
-  };
+  }
 
   let symTable = {
     "Test.MyType": 1
-  };
+  }
 
-  let mod = new GirModule(emptyRepositoryXml);
-  t.is(mod.name, "Test");
+  let mod = new GirModule(emptyRepositoryXml)
+  t.is(mod.name, "Test")
 
-  mod.symTable = symTable;
+  mod.symTable = symTable
 
-  t.deepEqual(mod.exportConstant(var_), ["export const MY_CONST:MyType"]);
-  t.deepEqual(mod.exportConstant(arrVar), ["export const MY_ARR:MyType[]"]);
-});
+  t.deepEqual(mod.exportConstant(var_), ["export const MY_CONST:MyType"])
+  t.deepEqual(mod.exportConstant(arrVar), ["export const MY_ARR:MyType[]"])
+})
 
 test("function", t => {
   let func = {
@@ -88,10 +84,8 @@ test("function", t => {
         ]
       }
     ],
-    "return-value": [
-      { $: { "transfer-ownership": "none" }, type: [{ $: { name: "utf8" } }] }
-    ]
-  };
+    "return-value": [{ $: { "transfer-ownership": "none" }, type: [{ $: { name: "utf8" } }] }]
+  }
 
   let symTable = {
     "Test.MyType": 1,
@@ -103,24 +97,22 @@ test("function", t => {
     "Test.BusType": 1,
     "Test.BusAcquiredCallback": 1,
     "Test.BusNameLostCallback": 1
-  };
+  }
 
-  let mod = new GirModule(emptyRepositoryXml);
-  t.is(mod.name, "Test");
+  let mod = new GirModule(emptyRepositoryXml)
+  t.is(mod.name, "Test")
 
-  mod.symTable = symTable;
+  mod.symTable = symTable
 
-  t.deepEqual(mod.exportFunction(func), [
-    "export function my_func(arg1: MyType): string"
-  ]);
+  t.deepEqual(mod.exportFunction(func), ["export function my_func(arg1: MyType): string"])
 
-  t.deepEqual(mod.exportFunction(TestData.funcBusOwnName), []);
+  t.deepEqual(mod.exportFunction(TestData.funcBusOwnName), [])
 
-  let func3 = TestData.funcBusOwnName;
-  func3.$.introspectable = "0";
+  let func3 = TestData.funcBusOwnName
+  func3.$.introspectable = "0"
 
-  t.deepEqual(mod.exportFunction(func3), []);
-});
+  t.deepEqual(mod.exportFunction(func3), [])
+})
 
 test("callback", t => {
   let cbs = [
@@ -137,9 +129,7 @@ test("callback", t => {
           parameter: [
             {
               $: { name: "action", "transfer-ownership": "none" },
-              type: [
-                { $: { name: "SimpleAction", "c:type": "GSimpleAction*" } }
-              ]
+              type: [{ $: { name: "SimpleAction", "c:type": "GSimpleAction*" } }]
             },
             {
               $: { name: "parameter", "transfer-ownership": "none" },
@@ -157,37 +147,37 @@ test("callback", t => {
         }
       ]
     }
-  ];
+  ]
 
   let symTable = {
     "Test.MyType": 1,
     "Test.SimpleAction": 1,
     "GLib.Variant": 1
-  };
+  }
 
-  let mod = new GirModule(emptyRepositoryXml);
-  t.is(mod.name, "Test");
+  let mod = new GirModule(emptyRepositoryXml)
+  t.is(mod.name, "Test")
 
-  mod.symTable = symTable;
+  mod.symTable = symTable
 
   t.deepEqual(mod.exportCallback(cbs[0]), [
     "export interface activate {",
     "    (action: SimpleAction, parameter: GLib.Variant): void",
     "}"
-  ]);
-});
+  ])
+})
 
 test("interface", t => {
   let symTable = {
     "Test.MyType": 1,
     "GLib.Variant": 1,
     "GLib.VariantType": 1
-  };
+  }
 
-  let mod = new GirModule(emptyRepositoryXml);
-  t.is(mod.name, "Test");
+  let mod = new GirModule(emptyRepositoryXml)
+  t.is(mod.name, "Test")
 
-  mod.symTable = symTable;
+  mod.symTable = symTable
 
   t.deepEqual(mod.exportInterface(TestData.interfaceAction), [
     "export class Action {",
@@ -220,7 +210,7 @@ test("interface", t => {
     "    static parse_detailed_name(detailed_name: string): [ /* returnType */ boolean, /* action_name */ string, /* target_value */ GLib.Variant ]",
     "    static print_detailed_name(action_name: string, target_value?: GLib.Variant | null): string",
     "}"
-  ]);
+  ])
 
   t.deepEqual(mod.exportInterface(TestData.interfaceActionGroup), [
     "export class ActionGroup {",
@@ -261,8 +251,8 @@ test("interface", t => {
     '    connect(sigName: "action-state-changed", callback: ((obj: ActionGroup, action_name: string, value: GLib.Variant) => void)): void',
     "    static name: string",
     "}"
-  ]);
-});
+  ])
+})
 
 test("constructors", t => {
   let symTable = {
@@ -270,12 +260,12 @@ test("constructors", t => {
     "GLib.String": 1,
     "Test.DBusInterfaceInfo": 1,
     "Test.DBusNodeInfo": 1
-  };
+  }
 
-  let mod = new GirModule(emptyRepositoryXml);
-  t.is(mod.name, "Test");
+  let mod = new GirModule(emptyRepositoryXml)
+  t.is(mod.name, "Test")
 
-  mod.symTable = symTable;
+  mod.symTable = symTable
 
   t.deepEqual(mod.exportInterface(TestData.interfaceDBusNodeInfo), [
     "export class DBusNodeInfo {",
@@ -293,8 +283,8 @@ test("constructors", t => {
     "    static name: string",
     "    static new_for_xml(xml_data: string): DBusNodeInfo",
     "}"
-  ]);
-});
+  ])
+})
 
 test("class", t => {
   let symTable = {
@@ -312,12 +302,12 @@ test("class", t => {
     "Test.Value": 1,
     "GLib.Quark": 1,
     "Test.ParamSpec": 1
-  };
+  }
 
-  let mod = new GirModule(emptyRepositoryXml);
-  t.is(mod.name, "Test");
+  let mod = new GirModule(emptyRepositoryXml)
+  t.is(mod.name, "Test")
 
-  mod.symTable = symTable;
+  mod.symTable = symTable
 
   t.deepEqual(mod.exportClass(TestData.classApplicationCommandLine), [
     "export interface ApplicationCommandLine_ConstructProps extends GObject.Object_ConstructProps {",
@@ -385,5 +375,5 @@ test("class", t => {
     "    static name: string",
     "    constructor (config?: ApplicationCommandLine_ConstructProps)",
     "}"
-  ]);
-});
+  ])
+})
