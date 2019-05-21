@@ -2,14 +2,12 @@
   "name": "ts-for-gjs",
   "version": "1.0.0",
   "description": "Typescript bindings for GJS",
-  "main": "out/index",
-  "typings": "out/index",
+  "main": "dist/bin.js",
   "scripts": {
-    "test": "tsc test.ts && node_modules/ava/cli.js test.js",
-    "regress": "tsc main.ts && nodejs main.js -m Gtk-3.0 -m Soup-2.4 -m GtkSource-3.0 -m WebKit2-4.0 -m AppIndicator3-0.1 -m Gda-5.0 -m Notify-0.7 -o out && cd out && tsc sam.ts",
-    "build": "tsc main.ts",
+    "test": "ava test.ts",
+    "build": "ts-node fuse.ts",
     "watch": "tsc --watch",
-    "run": "node main.js"
+    "prepack": "ts-node fuse.ts"
   },
   "repository": {
     "type": "git",
