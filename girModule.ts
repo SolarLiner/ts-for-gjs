@@ -1,4 +1,6 @@
-import { GirRepository, GirNamespace, GirEnumeration, GirFunction, GirVariable, GirClass, GirType, GirArray, GirAlias, TsForGjsExtended } from './types';
+import { GirRepository, GirNamespace, GirEnumeration, GirFunction, GirVariable, GirClass, GirType, GirArray, GirAlias, TsForGjsExtended, InheritanceTable, MapType } from './types';
+import { TupleType } from 'typescript';
+import * as lodash from "lodash";
 
 export class GirModule {
     name: string | null = null;
@@ -31,8 +33,8 @@ export class GirModule {
             throw new Error("No namespace found in the repository");
         }
     }
-    loadTypes(dict) {
-        let loadTypesInternal = (arr?: TsForGjsExtended[]) => {
+    loadTypes(dict: InheritanceTable<any>) {
+        let loadTypesInternal = (arr?: TsForGjsExtended<any>[]) => {
             if (arr) {
                 for (let x of arr) {
                     if (x.$) {
@@ -564,14 +566,14 @@ export class GirModule {
         if (e.$ && e.$["glib:is-gtype-struct-for"]) {
             return [];
         }
-        let checkName = (desc: string[], name, localNames): [string[], boolean] => {
+        let checkName = (desc: string[], name: string|null, localNames: Record<string, number>): [string[], boolean] => {
             if (!desc || desc.length == 0)
                 return [[], false];
             if (!name) {
                 // console.error(`No name for ${desc}`)
                 return [[], false];
             }
-            if (localNames[name]) {
+            if (name in localNames) {
                 // console.warn(`Name ${name} already defined (${desc})`)
                 return [[], false];
             }
@@ -628,7 +630,7 @@ export class GirModule {
         this.traverseInheritanceTree(e, copyProperties);
         this.forEachInterface(e, copyProperties);
         // Fields
-        const copyFields = (cls) => {
+        const copyFields = (cls: GirClass) => {
             if (cls.field) {
                 def.push(`    /* Fields of ${cls._fullSymName} */`);
                 for (let f of cls.field) {
@@ -668,7 +670,7 @@ export class GirModule {
                 }
             }
         });
-        const copySignals = (cls) => {
+        const copySignals = (cls: GirClass) => {
             let signals = cls["glib:signal"];
             if (signals) {
                 def.push(`    /* Signals of ${cls._fullSymName} */`);

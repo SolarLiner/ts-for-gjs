@@ -1,5 +1,8 @@
 import { GirModule } from "./girModule";
+// Misc types
+export type MapType<TA, I extends keyof TA = keyof TA> = { [P in I]: TA[P] };
 
+// GIR types
 interface GjsDollar<T> {
   $: T;
 }
@@ -161,3 +164,5 @@ export interface GirRepository {
   include?: GirInclude[];
   namespace?: GirNamespace[];
 }
+
+export type InheritanceTable<T, S extends keyof T = keyof T> = MapType<T, S>;

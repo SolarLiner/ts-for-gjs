@@ -115,7 +115,10 @@ export { }`
   );
 }
 
-function exportExtra(outDir: string | null, inheritanceTable) {
+function exportExtra(
+  outDir: string | null,
+  inheritanceTable: Record<string, any[]>
+) {
   if (!outDir) return;
 
   let def: string[] = [];
@@ -167,7 +170,7 @@ export function giCast<T>(from_: GObject.Object, to_: StaticNamed): T {
   fs.createWriteStream(`${outDir}/cast.ts`).write(def.join("\n"));
 }
 
-function finaliseInheritance(inheritanceTable) {
+function finaliseInheritance(inheritanceTable: Record<string, any[]>) {
   for (let clsName of lodash.keys(inheritanceTable)) {
     let p = inheritanceTable[clsName][0];
     while (p) {
@@ -200,7 +203,7 @@ function main() {
     .option("-o --outdir [dir]", "Directory to output to", null)
     .parse(process.argv);
 
-  let girModules: { [key: string]: GirModule } = {};
+  let girModules: Record<string, GirModule> = {};
   let girDirectory = commander.girDirectory;
   let girToLoad = commander.module;
 
