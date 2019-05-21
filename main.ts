@@ -284,6 +284,21 @@ function main() {
 
   console.log("Types loaded, generating .d.ts...")
 
+  console.log("Creating output directory...")
+  mkdirp(commander.outdir)
+    .then(() => {
+      console.log("Exporting GIR as TS definitions...")
+      // GJS internal stuff
+      writeGir(girModules, patch)
+      exportGjs(commander.outdir, girModules)
+      exportExtra(commander.outdir, inheritanceTable)
+
+      console.log("Done.")
+    })
+    .catch(err => console.error(err))
+}
+
+function writeGir(girModules: Record<string, GirModule>, patch: Record<string, string[]>) {
   for (let k of lodash.keys(girModules)) {
     let outf: NodeJS.WritableStream = process.stdout
     if (commander.outdir) {
@@ -295,26 +310,14 @@ function main() {
     console.log(` - ${k} ...`)
     girModules[k].patch = patch
     girModules[k].export(outf)
-
     if (commander.outdir) {
       let outdir: string = commander.outdir
       let name: string = girModules[k].name || "unknown"
       let fileName: string = `${outdir}/${name}.js`
       outf = fs.createWriteStream(fileName)
     }
-
     girModules[k].exportJs(outf)
   }
-
-  mkdirp(commander.outdir)
-    .then(() => {
-      // GJS internal stuff
-      exportGjs(commander.outdir, girModules)
-      exportExtra(commander.outdir, inheritanceTable)
-
-      console.log("Done.")
-    })
-    .catch(err => console.error(err))
 }
 
 async function mkdirp(dir: string) {
