@@ -21,6 +21,15 @@
     "url": "https://github.com/sammydre/ts-for-gjs/issues"
   },
   "homepage": "https://github.com/sammydre/ts-for-gjs#readme",
+  "ava": {
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
+  },
   "devDependencies": {
     "@types/lodash": "^4.14.66",
     "@types/node": "^12.0.2",
