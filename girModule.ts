@@ -697,7 +697,7 @@ export class GirModule {
         }
         else {
             let constructor_: GirFunction[] = (e['constructor'] || []) as GirFunction[];
-            if (constructor_) {
+            if (constructor_ && this.isIterable(constructor_)) {
                 for (let f of constructor_) {
                     let [desc, funcName] = this.getConstructorFunction(name, f, "    static ");
                     if (!funcName)
@@ -716,7 +716,7 @@ export class GirModule {
         if (true) {
             let stc: string[] = [];
             let constructor_: GirFunction[] = (e['constructor'] || []) as GirFunction[];
-            if (constructor_) {
+            if (constructor_ && this.isIterable<GirFunction>(constructor_)) {
                 for (let f of constructor_) {
                     let [desc, funcName] = this.getConstructorFunction(name, f, "    static ");
                     if (!funcName)
@@ -803,5 +803,10 @@ export class GirModule {
             for (let e of this.ns.alias)
                 out = out.concat(this.exportAlias(e));
         outStream.write(out.join("\n"));
+    }
+
+    private isIterable<T = any>(obj: any): obj is Iterable<T> {
+        if (typeof obj === "undefined" || obj === null) return false;
+        return typeof obj[Symbol.iterator] === 'function';
     }
 }
